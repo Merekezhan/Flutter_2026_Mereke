@@ -59,6 +59,7 @@ class _CollectionsScreenState extends State<CollectionsScreen> {
   Widget build(BuildContext context) {
     final query = _search.text.toLowerCase().trim();
 
+    // where(): filter pastries by search, category, and date.
     final filtered = widget.items.where((pastry) {
       final matchesSearch =
           pastry.title.toLowerCase().contains(query) ||
@@ -70,6 +71,18 @@ class _CollectionsScreenState extends State<CollectionsScreen> {
 
       return matchesSearch && matchesCategory && matchesDate;
     }).toList()..sort((a, b) => a.readyAt.compareTo(b.readyAt));
+
+    // map(): extract titles of the currently visible pastries.
+    final visibleTitles = filtered.map((pastry) => pastry.title).toList();
+
+    // fold(): calculate total free places in visible batches.
+    final totalFreePlaces = filtered.fold<int>(
+      0,
+      (total, pastry) => total + pastry.free,
+    );
+
+    // any(): check whether at least one visible batch is full.
+    final hasFullBatch = filtered.any((pastry) => pastry.isFull);
 
     return Column(
       children: [
@@ -132,6 +145,21 @@ class _CollectionsScreenState extends State<CollectionsScreen> {
             ),
           ),
         ),
+
+        // Collection statistics using map(), fold(), and any().
+        if (filtered.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '${visibleTitles.length} batches • '
+                '$totalFreePlaces free places'
+                '${hasFullBatch ? ' • Some batches are full' : ''}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ),
 
         Expanded(
           child: filtered.isEmpty
