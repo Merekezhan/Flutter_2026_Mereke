@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../models/pastry.dart';
 import '../models/pastry_category.dart';
-import '../utils/format.dart';
 
 class PastryFormScreen extends StatefulWidget {
   const PastryFormScreen({super.key, this.original});
@@ -20,6 +19,8 @@ class _PastryFormScreenState extends State<PastryFormScreen> {
   late final TextEditingController _placeController;
   late final TextEditingController _limitController;
   late final TextEditingController _descriptionController;
+  late final TextEditingController _dateController;
+  late final TextEditingController _timeController;
 
   late final FocusNode _placeFocus;
 
@@ -65,6 +66,12 @@ class _PastryFormScreenState extends State<PastryFormScreen> {
 
     _category = original?.category;
     _selectedDate = original?.readyAt;
+    _dateController = TextEditingController(
+      text: _selectedDate == null ? '' : _formatDate(_selectedDate!),
+    );
+    _timeController = TextEditingController(
+      text: _selectedDate == null ? '' : _formatTime(_selectedDate!),
+    );
     _isOnline = original?.isOnline ?? false;
 
     // Rebuild PopScope when text fields change.
@@ -91,16 +98,25 @@ class _PastryFormScreenState extends State<PastryFormScreen> {
     _placeController.dispose();
     _limitController.dispose();
     _descriptionController.dispose();
+    _dateController.dispose();
+    _timeController.dispose();
     _placeFocus.dispose();
 
     super.dispose();
   }
 
-  Future<void> _pickDateTime() async {
+  String _formatDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}/'
+      '${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+  String _formatTime(DateTime date) =>
+      '${date.hour.toString().padLeft(2, '0')}:'
+      '${date.minute.toString().padLeft(2, '0')}';
+
+  Future<void> _pickDate() async {
     if (_isSaving) return;
 
     final now = DateTime.now();
-
     final date = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? now.add(const Duration(days: 1)),
@@ -109,6 +125,28 @@ class _PastryFormScreenState extends State<PastryFormScreen> {
     );
 
     if (!mounted || date == null) return;
+
+    final previous = _selectedDate;
+    final time = previous == null
+        ? TimeOfDay.now()
+        : TimeOfDay.fromDateTime(previous);
+
+    setState(() {
+      _selectedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+      _dateController.text = _formatDate(_selectedDate!);
+      _timeController.text = _formatTime(_selectedDate!);
+    });
+    _formKey.currentState?.validate();
+  }
+
+  Future<void> _pickTime() async {
+    if (_isSaving) return;
 
     final time = await showTimePicker(
       context: context,
@@ -119,15 +157,19 @@ class _PastryFormScreenState extends State<PastryFormScreen> {
 
     if (!mounted || time == null) return;
 
+    final base = _selectedDate ?? DateTime.now().add(const Duration(days: 1));
     setState(() {
       _selectedDate = DateTime(
-        date.year,
-        date.month,
-        date.day,
+        base.year,
+        base.month,
+        base.day,
         time.hour,
         time.minute,
       );
+      _dateController.text = _formatDate(_selectedDate!);
+      _timeController.text = _formatTime(_selectedDate!);
     });
+    _formKey.currentState?.validate();
   }
 
   Future<void> _save() async {
@@ -308,10 +350,40 @@ class _PastryFormScreenState extends State<PastryFormScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: _isSaving ? null : _pickDateTime,
-                icon: const Icon(Icons.calendar_month),
-                label: Text(formatDate(_selectedDate)),
+              TextFormField(
+                controller: _dateController,
+                readOnly: true,
+                enabled: !_isSaving,
+                onTap: _pickDate,
+                decoration: const InputDecoration(
+                  labelText: 'Ready date',
+                  hintText: 'Select a date',
+                  prefixIcon: Icon(Icons.calendar_month),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (_) {
+                  if (_selectedDate == null) return 'Choose a date';
+                  if (widget.original == null &&
+                      !_selectedDate!.isAfter(DateTime.now())) {
+                    return 'Choose a future date and time';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _timeController,
+                readOnly: true,
+                enabled: !_isSaving,
+                onTap: _pickTime,
+                decoration: const InputDecoration(
+                  labelText: 'Ready time',
+                  hintText: 'Select a time',
+                  prefixIcon: Icon(Icons.access_time),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (_) =>
+                    _selectedDate == null ? 'Choose a time' : null,
               ),
               const SizedBox(height: 12),
               SwitchListTile(
