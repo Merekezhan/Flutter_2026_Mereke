@@ -1,5 +1,10 @@
+
 class Book {
-  const Book({required this.title, required this.author, required this.price});
+  const Book({
+    required this.title,
+    required this.author,
+    required this.price,
+  });
 
   final String title;
   final String author;
@@ -12,13 +17,21 @@ const books = [
     author: 'A. Nurmagambetova',
     price: 4200,
   ),
-  Book(title: 'Null Safety for Humans', author: 'B. Seitkali', price: 3100),
+  Book(
+    title: 'Null Safety for Humans',
+    author: 'B. Seitkali',
+    price: 3100,
+  ),
   Book(
     title: 'Constraints Go Down, Sizes Go Up',
     author: 'C. Tashimova',
     price: 5600,
   ),
-  Book(title: 'The Navigator Is a Stack', author: 'D. Alibekov', price: 2900),
+  Book(
+    title: 'The Navigator Is a Stack',
+    author: 'D. Alibekov',
+    price: 2900,
+  ),
   Book(
     title: 'Forms That Validate Themselves',
     author: 'E. Omarova',

@@ -1,76 +1,137 @@
-
 # Practice 9 — Put It High, Subscribe Low
 
-## Level 1 — Lifted State
+## Level 1 — Lifting State Up
 
-The cart was stored in Shell above MaterialApp.
+In the first version, the cart state was stored in the `Shell` widget above `MaterialApp`.
 
-Data was passed down through constructors, and callbacks were used to update the cart.
+The cart data was passed to `BooksScreen` and `CartScreen` through constructor parameters and callbacks.
 
-To add the total to the badge, I updated 2 constructors:
-- BooksScreen
-- CartBadge
+I used `setState()` to update the cart when a book was added or removed.
 
-Files changed:
-- main.dart
-- books_screen.dart
-- cart_badge.dart
+**Observation:**
 
-### Rebuild Test
+The console displayed `BooksScreen build`, `badge build`, and messages for the book rows. This demonstrated how rebuilding the parent widget can affect its child widgets.
 
-BooksScreen build messages after one Add: [measure]
-Row build messages after one Add: [measure]
+## Level 2 — ChangeNotifier Model
 
-## Level 2 — ChangeNotifier
+I created two model files:
 
-I created a Cart model using ChangeNotifier.
+- `models/book.dart` — stores book information.
+- `models/cart.dart` — manages the shopping cart.
 
-The model stores books, calculates the total, prevents duplicates, and notifies listeners when data changes.
+The `Cart` class extends `ChangeNotifier` and stores book quantities using `Map<Book, int>`.
 
-Model test result: 1 items, 3100 ₸
+The model includes:
 
-The items getter returns an unmodifiable list.
+- `add()` — adds a new book and prevents duplicates.
+- `increment()` — increases the quantity of a book.
+- `remove()` — removes a book.
+- `clear()` — clears the shopping cart.
+- `qtyOf()` — returns the quantity of a book.
+- `count` — returns the number of distinct books.
+- `total` — calculates the total price.
+
+The `items` getter returns an unmodifiable list to prevent external changes.
+
+The model calls `notifyListeners()` after successful changes.
 
 ## Level 3 — Provider
 
-I used ChangeNotifierProvider above MaterialApp.
+I used the `provider` package to manage shared application state.
 
-context.watch subscribes to changes.
-context.read accesses the model without subscribing.
-Consumer rebuilds its builder when the model changes.
+`ChangeNotifierProvider` creates and provides the `Cart` model to the application.
 
-### Provider Experiments
+I used three Provider methods:
 
-Using watch in an event callback:
-[insert the exact error message from your console]
+- `context.watch<Cart>()` — listens to changes and rebuilds the widget.
+- `context.read<Cart>()` — accesses the model without subscribing to changes.
+- `context.select<Cart, int>()` — listens only to a selected value.
 
-Using read for the badge inside build:
-No exception, but the badge did not update automatically.
+**Provider usage rules:**
 
-## Level 4 — Rebuild Optimization
+`context.read()` is suitable for button callbacks.
 
-Badge rebuilds with watch after three quantity changes:
-[measure]
+`context.watch()` and `context.select()` are used when a widget needs to react to state changes.
 
-Badge rebuilds with select after three quantity changes:
-[measure]
+Using `context.watch()` in an event callback is incorrect because listening should happen during the widget build process.
 
-context.select helps avoid unnecessary rebuilds when the selected value does not change.
+Using `context.read()` to display a changing value does not automatically rebuild the widget when that value changes.
 
-## Level 5 — Where does it live?
+## Level 4 — Quantities and Rebuild Experiment
 
-Cart — provided state, because both screens need access to the same data.
+I implemented book quantities using `Map<Book, int>`.
 
-Search text — ephemeral state, because only BooksScreen uses it.
+When the user presses `+`, the quantity increases and the total price is recalculated.
 
-Total expanded/collapsed — ephemeral state, because it belongs only to CartScreen.
+The cart badge displays the number of distinct books, not the total number of copies.
 
-Theme mode — lifted or provided state, because the whole application needs it.
+### Experiment: context.watch vs context.select
 
-## Conclusion
+I added `debugPrint()` to `CartBadge` to observe widget rebuilds.
 
-In this practice, I learned the difference between lifting state and using Provider.
+I added two different books to the cart and pressed the `+` button four times.
 
-I used ChangeNotifier, notifyListeners, context.watch, context.read, context.select, and Consumer.
+| Method | Quantity changes | Observed badge builds |
+|---|---:|---:|
+| `context.watch<Cart>().count` | 4 | 4 |
+| `context.select<Cart, int>((cart) => cart.count)` | 4 | 4 |
 
-I also learned how to reduce unnecessary widget rebuilds and separate business logic from UI.
+**Observation:**
+
+Both experiments produced four badge build messages during the test.
+
+The `context.watch()` method subscribes to all notifications from `Cart`.
+
+The `context.select()` method subscribes only to the selected `count` value. However, the badge can still rebuild when its parent widget rebuilds.
+
+In this implementation, the observed results did not demonstrate a reduction in badge rebuilds.
+
+**Conclusion:**
+
+`context.select()` can reduce unnecessary rebuilds caused by Provider notifications, but it does not prevent rebuilds triggered by parent widgets.
+
+## Level 5 — User Experience and State Separation
+
+I implemented the following features:
+
+- Search books by title or author.
+- Show a SnackBar after successfully adding a book.
+- Increase book quantity in the cart.
+- Remove books from the cart.
+- Show a confirmation dialog before clearing the cart.
+- Expand or collapse the total price section.
+
+### Where Does It Live?
+
+| State or behavior | Location |
+|---|---|
+| Book information | `models/book.dart` |
+| Cart items and quantities | `models/cart.dart` |
+| Total price calculation | `models/cart.dart` |
+| Search text | `books_screen.dart` |
+| Cart badge count | `cart_badge.dart` |
+| Expanded/collapsed total | `cart_screen.dart` |
+| SnackBar | `books_screen.dart` |
+| Confirmation dialog | `cart_screen.dart` |
+
+The cart model contains business logic, while the widgets manage the user interface and temporary UI state.
+
+## Testing and Validation
+
+I used Flutter commands to check the application:
+
+- `flutter analyze` — checked for code issues.
+- `flutter test` — ran automated tests.
+- `dart format .` — formatted the Dart code.
+
+I also manually tested adding books, increasing quantities, calculating totals, removing books, clearing the cart, and searching.
+
+The application worked during manual testing.
+
+## Final Conclusion
+
+In this practice, I learned how to move from `setState()` and passing data through constructors to shared state management with Provider.
+
+I implemented a `ChangeNotifier` cart model, book quantities, reactive UI updates, and basic user interactions.
+
+The rebuild experiment helped me understand the difference between `context.watch()` and `context.select()` and the influence of parent widget rebuilds.
