@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+
 import 'main.dart';
 import 'cart_badge.dart';
 
@@ -22,9 +22,7 @@ class BooksScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Books'),
-        actions: [
-          CartBadge(count: cart.length, total: total),
-        ],
+        actions: [CartBadge(count: cart.length, total: total)],
       ),
       body: ListView(
         children: books.map((b) {

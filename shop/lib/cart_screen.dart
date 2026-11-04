@@ -1,13 +1,9 @@
-
 import 'package:flutter/material.dart';
+
 import 'main.dart';
 
 class CartScreen extends StatelessWidget {
-  const CartScreen({
-    super.key,
-    required this.items,
-    required this.onRemove,
-  });
+  const CartScreen({super.key, required this.items, required this.onRemove});
 
   final List<Book> items;
   final void Function(Book) onRemove;

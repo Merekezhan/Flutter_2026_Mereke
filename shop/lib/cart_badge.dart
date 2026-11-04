@@ -1,12 +1,7 @@
-
 import 'package:flutter/material.dart';
 
 class CartBadge extends StatelessWidget {
-  const CartBadge({
-    super.key,
-    required this.count,
-    required this.total,
-  });
+  const CartBadge({super.key, required this.count, required this.total});
 
   final int count;
   final int total;
